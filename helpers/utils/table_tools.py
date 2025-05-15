@@ -6,6 +6,7 @@ import asyncio
 
 logger = get_logger(__name__)
 
+
 async def get_delta_schemas(
     tables: List[Dict], credential: DefaultAzureCredential
 ) -> List[Tuple[Dict, object, object]]:
@@ -18,9 +19,7 @@ async def get_delta_schemas(
     storage_options = {"bearer_token": token, "use_fabric_endpoint": "true"}
 
     for table in tables:
-        task = asyncio.create_task(
-            get_delta_table(table, storage_options)
-        )
+        task = asyncio.create_task(get_delta_table(table, storage_options))
         delta_tables.append(task)
         logger.debug(f"Created task for table: {table['name']}")
     # Wait for all tasks to complete
@@ -36,7 +35,7 @@ async def get_delta_table(
 ) -> Optional[Tuple[Dict, object, object]]:
     """Get Delta table schema and metadata"""
     logger.debug(f"Processing table: {table['name']}")
-    
+
     # Check if the table is a Delta table
 
     if table["format"].lower() == "delta":

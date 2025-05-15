@@ -1,7 +1,8 @@
 from helpers.logging_config import get_logger
-from helpers.clients import FabricApiClient
+from helpers.clients.fabric_client import FabricApiClient
 
 logger = get_logger(__name__)
+
 
 class WarehouseClient:
     def __init__(self, client: FabricApiClient):
@@ -22,5 +23,3 @@ class WarehouseClient:
             markdown += f"| {wh['id']} | {wh['displayName']} |\n"
 
         return markdown
-        
-

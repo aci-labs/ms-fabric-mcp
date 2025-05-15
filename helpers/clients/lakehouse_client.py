@@ -1,8 +1,9 @@
 from helpers.utils.validators import is_valid_uuid
 from helpers.logging_config import get_logger
-from helpers.clients import FabricApiClient
+from helpers.clients.fabric_client import FabricApiClient
 
 logger = get_logger(__name__)
+
 
 class LakehouseClient:
     def __init__(self, client: FabricApiClient):

@@ -1,7 +1,8 @@
 from helpers.logging_config import get_logger
-from helpers.clients import FabricApiClient
+from helpers.clients.fabric_client import FabricApiClient
 
 logger = get_logger(__name__)
+
 
 class WorkspaceClient:
     def __init__(self, client: FabricApiClient):
@@ -12,7 +13,7 @@ class WorkspaceClient:
         workspaces = await self.client.get_workspaces()
         if not workspaces:
             raise ValueError("No workspaces found.")
-        
+
         markdown = "# Fabric Workspaces\n\n"
         markdown += "| ID | Name | Capacity |\n"
         markdown += "|-----|------|----------|\n"

@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 
+
 def format_metadata_to_markdown(metadata: object) -> str:
     """Convert Delta table metadata to a responsive markdown format with HTML."""
     md = "#### Metadata\n\n"

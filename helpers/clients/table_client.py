@@ -1,5 +1,5 @@
 from helpers.logging_config import get_logger
-from helpers.clients import FabricApiClient
+from helpers.clients.fabric_client import FabricApiClient
 from helpers.utils.table_tools import get_delta_schemas
 from azure.identity import DefaultAzureCredential
 from helpers.formatters.schema_formatter import format_schema_to_markdown
@@ -7,22 +7,30 @@ from datetime import datetime
 
 logger = get_logger(__name__)
 
+
 class TableClient:
     def __init__(self, client: FabricApiClient):
         self.client = client
 
-    async def list_tables(self, workspace_id: str, rsc_id: str, rsc_type: str = "lakehouse"):
+    async def list_tables(
+        self, workspace_id: str, rsc_id: str, rsc_type: str = "lakehouse"
+    ):
         """List all tables in a lakehouse."""
         tables = await self.client.get_tables(workspace_id, rsc_id, rsc_type)
 
         if not tables:
             return f"No tables found in {rsc_type} '{rsc_id}'."
 
-        
-
         return tables
 
-    async def get_table_schema(self, workspace: str, rsc_id: str, rsc_type: str, table_name: str, credential: DefaultAzureCredential):
+    async def get_table_schema(
+        self,
+        workspace: str,
+        rsc_id: str,
+        rsc_type: str,
+        table_name: str,
+        credential: DefaultAzureCredential,
+    ):
         """Retrieve schema for a specific table."""
 
         tables = await self.list_tables(workspace, rsc_id, rsc_type)
@@ -31,9 +39,7 @@ class TableClient:
         matching_tables = [t for t in tables if t["name"].lower() == table_name.lower()]
 
         if not matching_tables:
-            return (
-                f"No table found with name '{table_name}' in {rsc_type} '{rsc_id}'."
-            )
+            return f"No table found with name '{table_name}' in {rsc_type} '{rsc_id}'."
 
         table = matching_tables[0]
 
@@ -52,8 +58,14 @@ class TableClient:
         markdown = format_schema_to_markdown(table_info, schema, metadata)
 
         return markdown
-    
-    async def get_all_schemas(self, workspace: str, rsc_id: str, rsc_type: str, credential: DefaultAzureCredential):
+
+    async def get_all_schemas(
+        self,
+        workspace: str,
+        rsc_id: str,
+        rsc_type: str,
+        credential: DefaultAzureCredential,
+    ):
         """Get schemas for all Delta tables in a Fabric lakehouse."""
         # Get all tables
         tables = await self.list_tables(workspace, rsc_id, rsc_type)

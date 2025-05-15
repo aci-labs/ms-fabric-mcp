@@ -9,6 +9,7 @@ from helpers.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+
 class FabricApiConfig(BaseModel):
     """Configuration for Fabric API"""
 
@@ -16,7 +17,7 @@ class FabricApiConfig(BaseModel):
     max_results: int = 100
 
 
-class FabricApiClient():
+class FabricApiClient:
     """Client for communicating with the Fabric API"""
 
     def __init__(self, credential=None, config=None):
@@ -31,7 +32,6 @@ class FabricApiClient():
         return {
             "Authorization": f"Bearer {self.credential.get_token('https://api.fabric.microsoft.com/.default').token}"
         }
-
 
     async def _make_request(
         self, endpoint: str, params: Optional[Dict] = None, method: str = "GET"
@@ -49,7 +49,11 @@ class FabricApiClient():
 
         try:
             response = requests.request(
-                method=method, url=url, headers=self._get_headers(), params=params, timeout=120
+                method=method,
+                url=url,
+                headers=self._get_headers(),
+                params=params,
+                timeout=120,
             )
             response.raise_for_status()
             return response.json()
@@ -99,7 +103,7 @@ class FabricApiClient():
         return await self.paginated_request(
             f"workspaces/{workspace_id}/items", params={"type": "Lakehouse"}
         )
-    
+
     async def get_warehouses(self, workspace_id: str) -> List[Dict]:
         """Get all warehouses in a workspace"""
         return await self.paginated_request(
@@ -154,4 +158,3 @@ class FabricApiClient():
             raise ValueError(f"Multiple lakehouses found with name: {lakehouse}")
 
         return matching_lakehouses[0]["id"]
-

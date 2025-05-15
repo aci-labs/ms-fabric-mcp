@@ -1,7 +1,10 @@
 from typing import Dict
 from helpers.formatters.metadata_formatter import format_metadata_to_markdown
 
-def format_schema_to_markdown(table_info: Dict, schema: object, metadata: object) -> str:
+
+def format_schema_to_markdown(
+    table_info: Dict, schema: object, metadata: object
+) -> str:
     """Convert a Delta table schema and metadata to a responsive markdown format with HTML."""
     md = f"<h2>Delta Table: <code>{table_info['name']}</code></h2>\n"
     md += f"<p><strong>Type:</strong> {table_info['type']}</p>\n"
