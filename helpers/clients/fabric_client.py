@@ -116,7 +116,41 @@ class FabricApiClient:
             f"workspaces/{workspace_id}/{type}s/{rsc_id}/tables",
             data_key="data",
         )
-
+    
+    async def get_reports(
+        self, workspace_id: str
+    ) -> List[Dict]:
+        """Get all reports in a lakehouse"""
+        return await self.paginated_request(
+            f"workspaces/{workspace_id}/reports",
+            data_key="value",
+        )
+    
+    async def get_report(
+        self, workspace_id: str, report_id: str
+    ) -> Dict:
+        """Get a specific report by ID"""
+        return await self._make_request(
+            f"workspaces/{workspace_id}/reports/{report_id}"
+        )
+    
+    async def get_semantic_models(
+        self, workspace_id: str
+    ) -> List[Dict]:
+        """Get all semantic models in a lakehouse"""
+        return await self.paginated_request(
+            f"workspaces/{workspace_id}/semanticModels",
+            data_key="value",
+        )
+    
+    async def get_semantic_model(
+        self, workspace_id: str, model_id: str
+    ) -> Dict:
+        """Get a specific semantic model by ID"""
+        return await self._make_request(
+            f"workspaces/{workspace_id}/semanticModels/{model_id}"
+        )
+    
     async def resolve_workspace(self, workspace: str) -> str:
         """Convert workspace name or ID to workspace ID with caching"""
         return await self._cached_resolve_workspace(workspace)

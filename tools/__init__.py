@@ -7,6 +7,14 @@ from tools.table import (
     get_lakehouse_table_schema,
     get_all_lakehouse_schemas,
 )
+from tools.semantic_model import (
+    list_semantic_models,
+    get_semantic_model,
+)
+from tools.report import (
+    list_reports,
+    get_report,
+)
 
 __all__ = [
     "set_workspace",
@@ -19,4 +27,8 @@ __all__ = [
     "list_tables",
     "get_lakehouse_table_schema",
     "get_all_lakehouse_schemas",
+    "list_semantic_models",
+    "get_semantic_model",
+    "list_reports",
+    "get_report",
 ]
