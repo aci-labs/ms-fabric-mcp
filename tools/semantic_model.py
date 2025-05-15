@@ -11,8 +11,11 @@ from typing import Optional
 
 logger = get_logger(__name__)
 
+
 @mcp.tool()
-async def list_semantic_models(workspace: Optional[str] = None, ctx: Context = None) -> str:
+async def list_semantic_models(
+    workspace: Optional[str] = None, ctx: Context = None
+) -> str:
     """List all semantic models in a Fabric workspace.
 
     Args:
@@ -30,8 +33,7 @@ async def list_semantic_models(workspace: Optional[str] = None, ctx: Context = N
         models = await client.list_semantic_models(
             workspace if workspace else __ctx_cache[f"{ctx.client_id}_workspace"]
         )
-        
-        
+
         markdown = f"# Semantic Models in workspace '{workspace}'\n\n"
         markdown += "| ID | Name | Folder ID | Description |\n"
         markdown += "|-----|------|-----------|-------------|\n"
@@ -43,6 +45,7 @@ async def list_semantic_models(workspace: Optional[str] = None, ctx: Context = N
 
     except Exception as e:
         return f"Error listing semantic models: {str(e)}"
+
 
 @mcp.tool()
 async def get_semantic_model(

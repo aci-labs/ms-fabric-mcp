@@ -1,12 +1,7 @@
-from typing import Optional
 
-from mcp.server.fastmcp import FastMCP, Context
-
-from azure.identity import DefaultAzureCredential
-
-from tools import * 
+from tools import *
 from helpers.logging_config import get_logger
-from helpers.utils.context import mcp, __ctx_cache, ctx
+from helpers.utils.context import mcp, __ctx_cache
 
 logger = get_logger(__name__)
 

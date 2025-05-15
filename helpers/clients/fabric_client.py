@@ -105,52 +105,69 @@ class FabricApiClient:
         )
 
     async def get_warehouses(self, workspace_id: str) -> List[Dict]:
-        """Get all warehouses in a workspace"""
+        """Get all warehouses in a workspace
+        Args:
+            workspace_id: ID of the workspace
+        Returns:
+            A list of dictionaries containing warehouse details or an error message.
+        """
         return await self.paginated_request(
             f"workspaces/{workspace_id}/items", params={"type": "Warehouse"}
         )
 
     async def get_tables(self, workspace_id: str, rsc_id: str, type: str) -> List[Dict]:
-        """Get all tables in a lakehouse"""
+        """Get all tables in a lakehouse
+        Args:
+            workspace_id: ID of the workspace
+            rsc_id: ID of the lakehouse
+            type: Type of the resource (e.g., "Lakehouse" or "Warehouse")
+        Returns:
+            A list of dictionaries containing table details or an error message.
+        """
         return await self.paginated_request(
             f"workspaces/{workspace_id}/{type}s/{rsc_id}/tables",
             data_key="data",
         )
-    
-    async def get_reports(
-        self, workspace_id: str
-    ) -> List[Dict]:
-        """Get all reports in a lakehouse"""
+
+    async def get_reports(self, workspace_id: str) -> List[Dict]:
+        """Get all reports in a lakehouse
+        Args:
+            workspace_id: ID of the workspace
+        Returns:
+            A list of dictionaries containing report details or an error message.
+        """
         return await self.paginated_request(
             f"workspaces/{workspace_id}/reports",
             data_key="value",
         )
-    
-    async def get_report(
-        self, workspace_id: str, report_id: str
-    ) -> Dict:
-        """Get a specific report by ID"""
+
+    async def get_report(self, workspace_id: str, report_id: str) -> Dict:
+        """Get a specific report by ID
+
+        Args:
+            workspace_id: ID of the workspace
+            report_id: ID of the report
+
+        Returns:
+            A dictionary containing the report details or an error message.
+        """
         return await self._make_request(
             f"workspaces/{workspace_id}/reports/{report_id}"
         )
-    
-    async def get_semantic_models(
-        self, workspace_id: str
-    ) -> List[Dict]:
+
+    async def get_semantic_models(self, workspace_id: str) -> List[Dict]:
         """Get all semantic models in a lakehouse"""
         return await self.paginated_request(
             f"workspaces/{workspace_id}/semanticModels",
             data_key="value",
         )
-    
-    async def get_semantic_model(
-        self, workspace_id: str, model_id: str
-    ) -> Dict:
+
+    async def get_semantic_model(self, workspace_id: str, model_id: str) -> Dict:
         """Get a specific semantic model by ID"""
         return await self._make_request(
             f"workspaces/{workspace_id}/semanticModels/{model_id}"
         )
-    
+
     async def resolve_workspace(self, workspace: str) -> str:
         """Convert workspace name or ID to workspace ID with caching"""
         return await self._cached_resolve_workspace(workspace)

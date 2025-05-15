@@ -1,4 +1,4 @@
-from helpers.utils.context import mcp, __ctx_cache, ctx
+from helpers.utils.context import mcp, __ctx_cache
 from mcp.server.fastmcp import Context
 from helpers.utils.authentication import get_azure_credentials
 from helpers.clients import (
@@ -41,7 +41,8 @@ async def list_reports(workspace: Optional[str] = None, ctx: Context = None) -> 
 
     except Exception as e:
         return f"Error listing reports: {str(e)}"
-    
+
+
 @mcp.tool()
 async def get_report(
     workspace: Optional[str] = None,

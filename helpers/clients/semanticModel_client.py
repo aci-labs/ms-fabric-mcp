@@ -1,9 +1,5 @@
 from helpers.logging_config import get_logger
 from helpers.clients.fabric_client import FabricApiClient
-from helpers.utils.table_tools import get_delta_schemas
-from azure.identity import DefaultAzureCredential
-from helpers.formatters.schema_formatter import format_schema_to_markdown
-from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -12,9 +8,7 @@ class SemanticModelClient:
     def __init__(self, client: FabricApiClient):
         self.client = client
 
-    async def list_semantic_models(
-        self, workspace_id: str
-    ):
+    async def list_semantic_models(self, workspace_id: str):
         """List all semantic models in a workspace."""
         models = await self.client.get_semantic_models(workspace_id)
 
@@ -22,10 +16,8 @@ class SemanticModelClient:
             return f"No semantic models found in workspace '{workspace_id}'."
 
         return models
-    
-    async def get_semantic_model(
-        self, workspace_id: str, model_id: str
-    ):
+
+    async def get_semantic_model(self, workspace_id: str, model_id: str):
         """Get a specific semantic model by ID."""
         model = await self.client.get_semantic_model(workspace_id, model_id)
 
