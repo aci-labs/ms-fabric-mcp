@@ -51,4 +51,3 @@ class WarehouseClient:
         return await self.client.create_item(
             name=name, workspace=workspace, description=description, type="Warehouse"
         )
-    

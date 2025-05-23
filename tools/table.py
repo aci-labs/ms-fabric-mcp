@@ -30,7 +30,11 @@ async def set_table(table_name: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-async def list_tables(workspace: Optional[str] = None, lakehouse: Optional[str] = None, ctx: Context = None) -> str:
+async def list_tables(
+    workspace: Optional[str] = None,
+    lakehouse: Optional[str] = None,
+    ctx: Context = None,
+) -> str:
     """List all tables in a Fabric workspace.
 
     Args:
@@ -47,8 +51,12 @@ async def list_tables(workspace: Optional[str] = None, lakehouse: Optional[str] 
         )
 
         tables = await client.list_tables(
-            workspace_id=workspace if workspace else __ctx_cache[f"{ctx.client_id}_workspace"],
-            rsc_id=lakehouse if lakehouse else __ctx_cache[f"{ctx.client_id}_lakehouse"]
+            workspace_id=workspace
+            if workspace
+            else __ctx_cache[f"{ctx.client_id}_workspace"],
+            rsc_id=lakehouse
+            if lakehouse
+            else __ctx_cache[f"{ctx.client_id}_lakehouse"],
         )
 
         return tables
@@ -105,7 +113,7 @@ async def get_lakehouse_table_schema(
 
 @mcp.tool()
 async def get_all_lakehouse_schemas(
-    workspace: Optional[str], lakehouse: Optional[str], ctx: Context
+    lakehouse: Optional[str], workspace: Optional[str] = None, ctx: Context = None
 ) -> str:
     """Get schemas for all Delta tables in a Fabric lakehouse.
 
@@ -142,12 +150,12 @@ async def get_all_lakehouse_schemas(
 
 
 @mcp.tool()
-async def read_table( 
+async def run_query(
     workspace: Optional[str] = None,
     lakehouse: Optional[str] = None,
     warehouse: Optional[str] = None,
-    table_name: str = None,
-    type: Optional[str] = None,
+    query: str = None,
+    type: Optional[str] = None,  # Add type hint for 'type'
     ctx: Context = None,
 ) -> str:
     """Read data from a table in a warehouse or lakehouse.
@@ -156,8 +164,8 @@ async def read_table(
         workspace: Name or ID of the workspace (optional).
         lakehouse: Name or ID of the lakehouse (optional).
         warehouse: Name or ID of the warehouse (optional).
-        table_name: The name of the table to read data from.
-        type: Type of resource ('lakehouse' or 'warehouse').
+        query: The SQL query to execute.
+        type: Type of resource ('lakehouse' or 'warehouse'). If not provided, it will be inferred.
         ctx: Context object containing client information.
     Returns:
         A string confirming the data read or an error message.
@@ -165,8 +173,8 @@ async def read_table(
     try:
         if ctx is None:
             raise ValueError("Context (ctx) must be provided.")
-        if table_name is None:
-            raise ValueError("Table name must be specified.")
+        if query is None:
+            raise ValueError("Query must be specified.")
         # Always resolve the SQL endpoint and database name
         database, sql_endpoint = await get_sql_endpoint(
             workspace=workspace,
@@ -174,18 +182,29 @@ async def read_table(
             warehouse=warehouse,
             type=type,
         )
-        if not database or not sql_endpoint or sql_endpoint.startswith("Error") or sql_endpoint.startswith("No SQL endpoint"):
+        if (
+            not database
+            or not sql_endpoint
+            or sql_endpoint.startswith("Error")
+            or sql_endpoint.startswith("No SQL endpoint")
+        ):
             return f"Failed to resolve SQL endpoint: {sql_endpoint}"
-        logger.info(f"Reading table {table_name} from SQL endpoint {sql_endpoint}")
+        logger.info(f"Running query '{query}' on SQL endpoint {sql_endpoint}")
         client = SQLClient(sql_endpoint=sql_endpoint, database=database)
-        df = client.read_table(table_name)
+        df = client.run_query(query)
         if df.is_empty():
-            return f"No data found in table '{table_name}'."
+            return f"No data found for query '{query}'."
+
         # Convert to markdown for user-friendly display
-        markdown = f"### Table: {table_name} (shape: {df.shape})\n\n"
-        markdown += df.head(10).to_pandas().to_markdown(index=False)
-        markdown += f"\n\nColumns: {', '.join(df.columns)}"
-        return markdown
+
+        # markdown = f"### Query: {query} (shape: {df.shape})\n\n"
+        # with pl.Config() as cfg:
+        #     cfg.set_tbl_formatting('ASCII_MARKDOWN')
+        #     display(Markdown(repr(df)))
+        # markdown += f"\n\n### Data Preview:\n\n"
+        # markdown += df.head(10).to_pandas().to_markdown(index=False)
+        # markdown += f"\n\nColumns: {', '.join(df.columns)}"
+        return df.to_dict()  # Return the DataFrame as a dictionary for easier handling
     except Exception as e:
         logger.error(f"Error reading data: {str(e)}")
         return f"Error reading data: {str(e)}"

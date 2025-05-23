@@ -6,6 +6,7 @@ from helpers.clients.semanticModel_client import SemanticModelClient
 from helpers.clients.report_client import ReportClient
 from helpers.clients.fabric_client import FabricApiClient
 from helpers.clients.sql_client import SQLClient, get_sql_endpoint
+from helpers.clients.notebook_client import NotebookClient
 
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "FabricApiClient",
     "SemanticModelClient",
     "ReportClient",
+    "NotebookClient",
     "SQLClient",
     "get_sql_endpoint",
 ]

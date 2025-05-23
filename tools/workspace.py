@@ -13,6 +13,7 @@ async def set_workspace(workspace: str, ctx: Context) -> str:
 
     Args:
         workspace: Name or ID of the workspace
+        ctx: Context object containing client information
     Returns:
         A string confirming the workspace has been set.
     """

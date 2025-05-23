@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional, Tuple, Union
+import base64
 from urllib.parse import quote
 from functools import lru_cache
 import requests
@@ -8,8 +9,11 @@ from helpers.logging_config import get_logger
 from helpers.utils import _is_valid_uuid
 import json
 from uuid import UUID
+
 logger = get_logger(__name__)
-from  sempy_labs._helper_functions import create_item
+# from  sempy_labs._helper_functions import create_item
+
+
 
 class FabricApiConfig(BaseModel):
     """Configuration for Fabric API"""
@@ -34,9 +38,15 @@ class FabricApiClient:
             "Authorization": f"Bearer {self.credential.get_token('https://api.fabric.microsoft.com/.default').token}"
         }
 
-    def _build_url(self, endpoint: str, continuation_token: Optional[str] = None) -> str:
+    def _build_url(
+        self, endpoint: str, continuation_token: Optional[str] = None
+    ) -> str:
         # If the endpoint starts with http, use it as-is.
-        url = endpoint if endpoint.startswith("http") else f"{self.config.base_url}/{endpoint.lstrip('/')}"
+        url = (
+            endpoint
+            if endpoint.startswith("http")
+            else f"{self.config.base_url}/{endpoint.lstrip('/')}"
+        )
         if continuation_token:
             separator = "&" if "?" in url else "?"
             encoded_token = quote(continuation_token)
@@ -50,28 +60,27 @@ class FabricApiClient:
         method: str = "GET",
         use_pagination: bool = False,
         data_key: str = "value",
-        lro: bool = False,  
+        lro: bool = False,
         lro_poll_interval: int = 2,  # seconds between polls
         lro_timeout: int = 300,  # max seconds to wait
     ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """
         Make an asynchronous call to the Fabric API.
-        
+
         If use_pagination is True, it will automatically handle paginated responses.
-        
+
         If lro is True, will poll for long-running operation completion.
         """
         import time
+
         params = params or {}
 
         # Define a helper to build the full URL from the endpoint.
-        
 
         if not use_pagination:
             url = self._build_url(endpoint=endpoint)
             try:
                 if method.upper() == "POST":
-                    payload = json.dumps(params)
                     response = requests.post(
                         url,
                         headers=self._get_headers(),
@@ -81,7 +90,6 @@ class FabricApiClient:
                 else:
                     if "maxResults" not in params:
                         params["maxResults"] = self.config.max_results
-                    logger.debug(f"{method.upper()} {url} with params: {params}")
                     response = requests.request(
                         method=method.upper(),
                         url=url,
@@ -91,29 +99,46 @@ class FabricApiClient:
                     )
                 # LRO support: check for 202 and Operation-Location
                 if lro and response.status_code == 202:
-                    op_url = response.headers.get("Operation-Location") or response.headers.get("operation-location")
+                    op_url = response.headers.get(
+                        "Operation-Location"
+                    ) or response.headers.get("operation-location")
                     if not op_url:
                         logger.error("LRO: No Operation-Location header found.")
                         return None
                     logger.info(f"LRO: Polling {op_url} for operation status...")
                     start_time = time.time()
                     while True:
-                        poll_resp = requests.get(op_url, headers=self._get_headers(), timeout=60)
+                        poll_resp = requests.get(
+                            op_url, headers=self._get_headers(), timeout=60
+                        )
                         if poll_resp.status_code not in (200, 201, 202):
-                            logger.error(f"LRO: Poll failed with status {poll_resp.status_code}")
+                            logger.error(
+                                f"LRO: Poll failed with status {poll_resp.status_code}"
+                            )
                             return None
                         poll_data = poll_resp.json()
-                        status = poll_data.get("status") or poll_data.get("operationStatus")
-                        if status in ("Succeeded", "succeeded", "Completed", "completed"):
+                        status = poll_data.get("status") or poll_data.get(
+                            "operationStatus"
+                        )
+                        if status in (
+                            "Succeeded",
+                            "succeeded",
+                            "Completed",
+                            "completed",
+                        ):
                             logger.info("LRO: Operation succeeded.")
                             return poll_data
                         if status in ("Failed", "failed", "Canceled", "canceled"):
-                            logger.error(f"LRO: Operation failed or canceled. Status: {status}")
+                            logger.error(
+                                f"LRO: Operation failed or canceled. Status: {status}"
+                            )
                             return poll_data
                         if time.time() - start_time > lro_timeout:
                             logger.error("LRO: Polling timed out.")
                             return None
-                        logger.debug(f"LRO: Status {status}, waiting {lro_poll_interval}s...")
+                        logger.debug(
+                            f"LRO: Status {status}, waiting {lro_poll_interval}s..."
+                        )
                         time.sleep(lro_poll_interval)
                 response.raise_for_status()
                 return response.json()
@@ -126,14 +151,14 @@ class FabricApiClient:
             results = []
             continuation_token = None
             while True:
-                url = self._build_url(endpoint=endpoint, continuation_token=continuation_token)
+                url = self._build_url(
+                    endpoint=endpoint, continuation_token=continuation_token
+                )
                 request_params = params.copy()
                 # Remove any existing continuationToken in parameters to avoid conflict.
                 request_params.pop("continuationToken", None)
                 try:
                     if method.upper() == "POST":
-                        payload = json.dumps(request_params)
-                        logger.debug(f"POST {url} with payload: {payload}")
                         response = requests.post(
                             url,
                             headers=self._get_headers(),
@@ -143,7 +168,6 @@ class FabricApiClient:
                     else:
                         if "maxResults" not in request_params:
                             request_params["maxResults"] = self.config.max_results
-                        logger.debug(f"{method.upper()} {url} with params: {request_params}")
                         response = requests.request(
                             method=method.upper(),
                             url=url,
@@ -151,7 +175,6 @@ class FabricApiClient:
                             params=request_params,
                             timeout=120,
                         )
-                    logger.debug(f"Response: {response.status_code} {response.text}")
                     response.raise_for_status()
                     data = response.json()
                 except requests.RequestException as e:
@@ -171,16 +194,11 @@ class FabricApiClient:
 
     async def get_workspaces(self) -> List[Dict]:
         """Get all available workspaces"""
-        return await self._make_request(
-            f"workspaces", use_pagination=True
-        )
-        return await self.get_items("workspaces")
+        return await self._make_request("workspaces", use_pagination=True)
 
     async def get_lakehouses(self, workspace_id: str) -> List[Dict]:
         """Get all lakehouses in a workspace"""
-        return await self.get_items(
-            workspace_id=workspace_id, item_type="Lakehouse"
-        )
+        return await self.get_items(workspace_id=workspace_id, item_type="Lakehouse")
 
     async def get_warehouses(self, workspace_id: str) -> List[Dict]:
         """Get all warehouses in a workspace
@@ -189,9 +207,7 @@ class FabricApiClient:
         Returns:
             A list of dictionaries containing warehouse details or an error message.
         """
-        return await self.get_items(
-            workspace_id=workspace_id, item_type="Warehouse"
-        )
+        return await self.get_items(workspace_id=workspace_id, item_type="Warehouse")
 
     async def get_tables(self, workspace_id: str, rsc_id: str, type: str) -> List[Dict]:
         """Get all tables in a lakehouse
@@ -291,12 +307,11 @@ class FabricApiClient:
 
         return matching_lakehouses[0]["id"]
 
-   
     async def get_items(
         self,
         workspace_id: str,
         item_type: Optional[str] = None,
-        params: Optional[Dict] = None
+        params: Optional[Dict] = None,
     ) -> List[Dict]:
         """Get all items in a workspace"""
         if not _is_valid_uuid(workspace_id):
@@ -319,18 +334,21 @@ class FabricApiClient:
         if not _is_valid_uuid(item_id):
             item_name, item_id = await self.resolve_item_name_and_id(item_id)
         if not _is_valid_uuid(workspace_id):
-            (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(workspace_id)
+            (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(
+                workspace_id
+            )
         return await self._make_request(
             f"workspaces/{workspace_id}/{item_type}s/{item_id}"
         )
 
     async def create_item(
-            self,
+        self,
         name: str,
         type: str,
         description: Optional[str] = None,
         definition: Optional[dict] = None,
         workspace: Optional[str | UUID] = None,
+        lro: Optional[bool] = False,
     ):
         """
         Creates an item in a Fabric workspace.
@@ -355,13 +373,13 @@ class FabricApiClient:
         if _is_valid_uuid(workspace):
             workspace_id = workspace
         else:
-            (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(workspace)
+            (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(
+                workspace
+            )
         item_type = item_types.get(type)[0].lower()
-        item_type_url = item_types.get(type)[1]
 
         payload = {
             "displayName": name,
-            "type": item_type,
         }
         if description:
             payload["description"] = description
@@ -369,10 +387,10 @@ class FabricApiClient:
             payload["definition"] = definition
 
         response = await self._make_request(
-            endpoint=f"workspaces/{workspace_id}/items",
+            endpoint=f"workspaces/{workspace_id}/{item_type}s",
             method="post",
             params=payload,
-            lro=True,
+            lro=lro,
             lro_poll_interval=0.5,
         )
         if response is None:
@@ -386,12 +404,17 @@ class FabricApiClient:
         return response
 
     async def resolve_item_name_and_id(
-            self,
-        item: str | UUID, type: Optional[str] = None, workspace: Optional[str | UUID] = None
+        self,
+        item: str | UUID,
+        type: Optional[str] = None,
+        workspace: Optional[str | UUID] = None,
     ) -> Tuple[str, UUID]:
-
-        (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(workspace)
-        item_id = await self.resolve_item_id(item=item, type=type, workspace=workspace_id)
+        (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(
+            workspace
+        )
+        item_id = await self.resolve_item_id(
+            item=item, type=type, workspace=workspace_id
+        )
         item_data = await self._make_request(
             f"workspaces/{workspace_id}/items/{item_id}"
         )
@@ -399,11 +422,14 @@ class FabricApiClient:
         return item_name, item_id
 
     async def resolve_item_id(
-            self,
-        item: str | UUID, type: Optional[str] = None, workspace: Optional[str | UUID] = None
+        self,
+        item: str | UUID,
+        type: Optional[str] = None,
+        workspace: Optional[str | UUID] = None,
     ) -> UUID:
-
-        (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(workspace)
+        (workspace_name, workspace_id) = await self.resolve_workspace_name_and_id(
+            workspace
+        )
         item_id = None
 
         if _is_valid_uuid(item):
@@ -413,29 +439,22 @@ class FabricApiClient:
                 self._make_request(
                     endpoint=f"workspaces/{workspace_id}/items/{item_id}"
                 )
-            except requests.RequestException as e:
+            except requests.RequestException:
                 raise ValueError(
                     f"The '{item_id}' item was not found in the '{workspace_name}' workspace."
                 )
         else:
             if type is None:
                 raise ValueError(
-                    f"The 'type' parameter is required if specifying an item name."
+                    "The 'type' parameter is required if specifying an item name."
                 )
             responses = await self._make_request(
                 endpoint=f"workspaces/{workspace_id}/items?type={type}",
                 use_pagination=True,
             )
-            # for r in responses:
             for v in responses:
-                logger.debug(f"Item: {v}")
-                logger.debug(f"Item ID: {v.get('id')}")
-                logger.debug(f"Item Type: {v.get('type')} | {v['type']}")
-                logger.debug(f"Item Name: {v.get('displayName')} | {v['displayName']}")
-                display_name = v['displayName']
-                logger.debug(f"Item input: {item}")
+                display_name = v["displayName"]
                 if display_name == item:
-                    logger.debug(f"Item found: {display_name}")
                     item_id = v.get("id")
                     break
 
@@ -445,8 +464,9 @@ class FabricApiClient:
             )
 
         return item_id
-        
-    async def resolve_workspace_name_and_id(self, 
+
+    async def resolve_workspace_name_and_id(
+        self,
         workspace: Optional[str | UUID] = None,
     ) -> Tuple[str, UUID]:
         """
@@ -477,7 +497,6 @@ class FabricApiClient:
             )
             workspace_id = None
             workspace_name = None
-            logger.debug(f"-------RESPONSES: {responses}")
             for r in responses:
                 display_name = r.get("displayName")
                 if display_name == workspace:
@@ -489,20 +508,65 @@ class FabricApiClient:
             raise ValueError("Workspace not found")
 
         return workspace_name, workspace_id
-    
+
     async def resolve_workspace_name(self, workspace_id: Optional[UUID] = None) -> str:
-
         try:
-            response = await self._make_request(
-                endpoint=f"workspaces/{workspace_id}"
-            )
-            logger.debug(f"resolve_workspace_name API response: {response}")
+            response = await self._make_request(endpoint=f"workspaces/{workspace_id}")
             if not response or "displayName" not in response:
-                raise ValueError(f"Workspace '{workspace_id}' not found or API response invalid: {response}")
-        except requests.RequestException as e:
-            raise ValueError(
-                f"The '{workspace_id}' workspace was not found."
-            )
+                raise ValueError(
+                    f"Workspace '{workspace_id}' not found or API response invalid: {response}"
+                )
+        except requests.RequestException:
+            raise ValueError(f"The '{workspace_id}' workspace was not found.")
 
-        logger.debug(f"Display name of workspace '{workspace_id}': {response.get('displayName')}")
         return response.get("displayName")
+
+    async def get_notebooks(self, workspace_id: str) -> List[Dict]:
+        """Get all notebooks in a workspace"""
+        return await self.get_items(workspace_id=workspace_id, item_type="Notebook")
+
+    async def get_notebook(self, workspace_id: str, notebook_id: str) -> Dict:
+        """Get a specific notebook by ID"""
+        return await self.get_item(
+            item_id=notebook_id, workspace_id=workspace_id, item_type="notebook"
+        )
+
+    async def create_notebook(
+        self, workspace_id: str, notebook_name: str, ipynb_name: str, content: str
+    ) -> Dict:
+        """Create a new notebook."""
+        if not _is_valid_uuid(workspace_id):
+            raise ValueError("Invalid workspace ID.")
+
+        # Define the notebook definition
+        logger.debug(
+            f"Defining notebook '{notebook_name}' in workspace '{workspace_id}'."
+        )
+        definition = {
+            "format": "ipynb",
+            "parts": [
+                {
+                    "path": f"{ipynb_name}.ipynb",
+                    "payload": base64.b64encode(
+                        content
+                        if isinstance(content, bytes)
+                        else content.encode("utf-8")
+                    ).decode("utf-8"),
+                    "payloadType": "InlineBase64",
+                },
+                # {
+                #     "path": ".platform",
+                #     "payload": base64.b64encode("dotPlatformBase64String".encode("utf-8")).decode("utf-8"),
+                #     "payloadType": "InlineBase64",
+                # },
+            ],
+        }
+        logger.info(
+            f"-------Creating notebook '{notebook_name}' in workspace '{workspace_id}'."
+        )
+        return await self.create_item(
+            workspace=workspace_id,
+            type="Notebook",
+            name=notebook_name,
+            definition=definition,
+        )

@@ -6,7 +6,7 @@ from tools.table import (
     list_tables,
     get_lakehouse_table_schema,
     get_all_lakehouse_schemas,
-    read_table,
+    run_query,
 )
 from tools.semantic_model import (
     list_semantic_models,
@@ -17,6 +17,7 @@ from tools.report import (
     get_report,
 )
 from tools.load_data import load_data_from_url
+from tools.notebook import list_notebooks, create_notebook
 
 __all__ = [
     "set_workspace",
@@ -34,5 +35,7 @@ __all__ = [
     "list_reports",
     "get_report",
     "load_data_from_url",
-    "read_table",
+    "run_query",
+    "list_notebooks",
+    "create_notebook",
 ]

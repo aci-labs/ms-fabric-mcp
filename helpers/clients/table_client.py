@@ -85,7 +85,6 @@ class TableClient:
         # Get schema for all tables
         delta_tables = await get_delta_schemas(delta_format_tables, credential)
 
-        logger.debug(f"Delta Tables response: {tables}")
         if not delta_tables:
             return "Could not retrieve schemas for any tables."
 

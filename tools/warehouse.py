@@ -48,7 +48,8 @@ async def list_warehouses(workspace: Optional[str] = None, ctx: Context = None) 
 
     except Exception as e:
         return f"Error listing warehouses: {str(e)}"
-    
+
+
 @mcp.tool()
 async def create_warehouse(
     name: str,
@@ -71,13 +72,15 @@ async def create_warehouse(
             FabricApiClient(get_azure_credentials(ctx.client_id, __ctx_cache))
         )
 
-        warehouse = await client.create_warehouse(
+        response = await client.create_warehouse(
             name=name,
-            workspace=workspace if workspace else __ctx_cache[f"{ctx.client_id}_workspace"],
+            workspace=workspace
+            if workspace
+            else __ctx_cache[f"{ctx.client_id}_workspace"],
             description=description,
         )
 
-        return f"Warehouse '{name}' created successfully."
+        return f"Warehouse '{response['id']}' created successfully."
 
     except Exception as e:
         return f"Error creating warehouse: {str(e)}"

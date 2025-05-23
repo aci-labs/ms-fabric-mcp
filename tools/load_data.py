@@ -1,17 +1,20 @@
 from helpers.utils.context import mcp, __ctx_cache
 from mcp.server.fastmcp import Context
 from helpers.utils.authentication import get_azure_credentials
-from helpers.clients import FabricApiClient, LakehouseClient, WarehouseClient, get_sql_endpoint
-from helpers.clients.sql_client import SQLClient
+from helpers.clients import (
+    FabricApiClient,
+    LakehouseClient,
+    WarehouseClient,
+    get_sql_endpoint,
+)
 from helpers.logging_config import get_logger
 import tempfile
-import logging
-import polars as pl
 import os
 import requests
 from typing import Optional
 
 logger = get_logger(__name__)
+
 
 @mcp.tool()
 async def load_data_from_url(
@@ -42,12 +45,13 @@ async def load_data_from_url(
         file_ext = url.split("?")[0].split(".")[-1].lower()
         if file_ext not in ("csv", "parquet"):
             return f"Unsupported file type: {file_ext}. Only CSV and Parquet are supported."
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_ext}") as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=f".{file_ext}"
+        ) as tmp_file:
             tmp_file.write(response.content)
             tmp_path = tmp_file.name
         # Choose destination: lakehouse or warehouse
         credential = get_azure_credentials(ctx.client_id, __ctx_cache)
-        client = None
         resource_id = None
         resource_type = None
         if lakehouse:

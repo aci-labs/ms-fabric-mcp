@@ -78,15 +78,27 @@ This project is inspired by the following project: https://github.com/Augustab/m
 
 The following tools are available via the MCP server:
 
-- **`list_workspaces`**: List all available Fabric workspaces.
-- **`list_lakehouses(workspace)`**: List all lakehouses in a specified workspace.
-- **`list_warehouses(workspace)`**: List all warehouses in a specified workspace.
-- **`list_tables(workspace, lakehouse)`**: List all tables in a specified lakehouse.
-- **`get_lakehouse_table_schema(workspace, lakehouse, table_name)`**: Retrieve the schema and metadata for a specific Delta table.
+- **`create_lakehouse(name, workspace, description)`**: Create a new lakehouse in a Fabric workspace.
+- **`create_warehouse(name, workspace, description)`**: Create a new warehouse in a Fabric workspace.
 - **`get_all_lakehouse_schemas(workspace, lakehouse)`**: Retrieve schemas and metadata for all Delta tables in a lakehouse.
-- **`set_lakehouse(workspace, lakehouse)`**: Set the current lakehouse context.
-- **`set_warehouse(workspace, warehouse)`**: Set the current warehouse context.
+- **`get_lakehouse_table_schema(workspace, lakehouse, table_name)`**: Retrieve the schema and metadata for a specific Delta table.
+- **`get_report(workspace, report_id)`**: Get a specific report by ID.
+- **`get_semantic_model(workspace, model_id)`**: Get a specific semantic model by ID.
+- **`get_sql_endpoint(workspace, lakehouse, warehouse, type)`**: Retrieve the SQL endpoint for a specified lakehouse or warehouse.
+- **`list_lakehouses(workspace)`**: List all lakehouses in a specified workspace.
+- **`list_reports(workspace)`**: List all reports in a Fabric workspace.
+- **`list_semantic_models(workspace)`**: List all semantic models in a Fabric workspace.
+- **`list_tables(workspace, lakehouse)`**: List all tables in a specified lakehouse.
+- **`list_warehouses(workspace)`**: List all warehouses in a specified workspace.
+- **`list_workspaces`**: List all available Fabric workspaces.
+- **`load_data_from_url(url, destination_table, workspace, lakehouse, warehouse)`**: Load data from a URL into a table in a warehouse or lakehouse.
+- **`run_query(workspace, lakehouse, warehouse, query, type)`**: Run a SQL query against a warehouse or lakehouse (SQLEndpoint).
+- **`set_lakehouse(lakehouse)`**: Set the current lakehouse context.
+- **`set_table(table_name)`**: Set the current table for the session.
+- **`set_warehouse(warehouse)`**: Set the current warehouse context.
 - **`set_workspace(workspace)`**: Set the current workspace context.
+- **`create_notebook(name, workspace, content)`**: Create a new notebook in a Fabric workspace with the specified content. -- WIP
+- **`list_notebooks(workspace)`**: List all notebooks in a Fabric workspace.
 
 
 ## License

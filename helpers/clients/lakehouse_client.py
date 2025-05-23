@@ -36,20 +36,20 @@ class LakehouseClient:
         """Get details of a specific lakehouse."""
         if not _is_valid_uuid(workspace):
             raise ValueError("Invalid workspace ID.")
-        
+
         if not lakehouse:
             raise ValueError("Lakehouse name cannot be empty.")
-        
-        response = await self.client.get_item(
-            workspace_id=workspace, item_id=lakehouse
-        )
+
+        response = await self.client.get_item(workspace_id=workspace, item_id=lakehouse)
         logger.info(f"Lakehouse details: {response}")
         return response
 
     async def resolve_lakehouse(self, workspace_id: str, lakehouse_name: str):
         """Resolve lakehouse name to lakehouse ID."""
-        return await self.client.resolve_item_name_and_id(workspace=workspace_id, item=lakehouse_name, type="Lakehouse")
-    
+        return await self.client.resolve_item_name_and_id(
+            workspace=workspace_id, item=lakehouse_name, type="Lakehouse"
+        )
+
     async def create_lakehouse(
         self,
         name: str,
@@ -59,7 +59,7 @@ class LakehouseClient:
         """Create a new lakehouse."""
         if not _is_valid_uuid(workspace):
             raise ValueError("Invalid workspace ID.")
-        
+
         if not name:
             raise ValueError("Lakehouse name cannot be empty.")
 
