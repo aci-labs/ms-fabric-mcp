@@ -51,7 +51,7 @@ class TableClient:
         delta_tables = await get_delta_schemas([table], credential)
 
         if not delta_tables:
-            return f"Could not retrieve schema for table '{table}'."
+            return f"Could not retrieve schema for table '{table['name']}'."
 
         # Format result as markdown
         table_info, schema, metadata = delta_tables[0]

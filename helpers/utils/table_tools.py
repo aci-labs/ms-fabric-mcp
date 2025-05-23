@@ -27,7 +27,7 @@ async def get_delta_schemas(
     logger.info(f"Completed schema extraction for {len(delta_tables)} tables")
     # Filter out None values
     delta_tables = [dt for dt in delta_tables if dt is not None]
-    return None
+    return delta_tables
 
 
 async def get_delta_table(

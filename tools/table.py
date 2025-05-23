@@ -4,9 +4,14 @@ from helpers.utils.authentication import get_azure_credentials
 from helpers.clients import (
     FabricApiClient,
     TableClient,
+    SQLClient,
+    get_sql_endpoint,
 )
 
 from typing import Optional
+from helpers.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 @mcp.tool()
@@ -25,11 +30,12 @@ async def set_table(table_name: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-async def list_tables(workspace: Optional[str] = None, ctx: Context = None) -> str:
+async def list_tables(workspace: Optional[str] = None, lakehouse: Optional[str] = None, ctx: Context = None) -> str:
     """List all tables in a Fabric workspace.
 
     Args:
         workspace: Name or ID of the workspace (optional)
+        lakehouse: Name or ID of the lakehouse (optional)
         ctx: Context object containing client information
 
     Returns:
@@ -41,7 +47,8 @@ async def list_tables(workspace: Optional[str] = None, ctx: Context = None) -> s
         )
 
         tables = await client.list_tables(
-            workspace if workspace else __ctx_cache[f"{ctx.client_id}_workspace"]
+            workspace_id=workspace if workspace else __ctx_cache[f"{ctx.client_id}_workspace"],
+            rsc_id=lakehouse if lakehouse else __ctx_cache[f"{ctx.client_id}_lakehouse"]
         )
 
         return tables
@@ -69,7 +76,7 @@ async def get_lakehouse_table_schema(
         A string containing the schema of the specified table or an error message.
     """
     try:
-        credential = get_azure_credentials(ctx.client_id)
+        credential = get_azure_credentials(ctx.client_id, __ctx_cache)
         client = TableClient(FabricApiClient(credential))
 
         if table_name is None:
@@ -111,7 +118,7 @@ async def get_all_lakehouse_schemas(
         A string containing the schemas of all Delta tables or an error message.
     """
     try:
-        credential = get_azure_credentials(ctx.client_id)
+        credential = get_azure_credentials(ctx.client_id, __ctx_cache)
         client = TableClient(FabricApiClient(credential))
 
         if workspace is None:
@@ -132,3 +139,53 @@ async def get_all_lakehouse_schemas(
 
     except Exception as e:
         return f"Error retrieving table schemas: {str(e)}"
+
+
+@mcp.tool()
+async def read_table( 
+    workspace: Optional[str] = None,
+    lakehouse: Optional[str] = None,
+    warehouse: Optional[str] = None,
+    table_name: str = None,
+    type: Optional[str] = None,
+    ctx: Context = None,
+) -> str:
+    """Read data from a table in a warehouse or lakehouse.
+
+    Args:
+        workspace: Name or ID of the workspace (optional).
+        lakehouse: Name or ID of the lakehouse (optional).
+        warehouse: Name or ID of the warehouse (optional).
+        table_name: The name of the table to read data from.
+        type: Type of resource ('lakehouse' or 'warehouse').
+        ctx: Context object containing client information.
+    Returns:
+        A string confirming the data read or an error message.
+    """
+    try:
+        if ctx is None:
+            raise ValueError("Context (ctx) must be provided.")
+        if table_name is None:
+            raise ValueError("Table name must be specified.")
+        # Always resolve the SQL endpoint and database name
+        database, sql_endpoint = await get_sql_endpoint(
+            workspace=workspace,
+            lakehouse=lakehouse,
+            warehouse=warehouse,
+            type=type,
+        )
+        if not database or not sql_endpoint or sql_endpoint.startswith("Error") or sql_endpoint.startswith("No SQL endpoint"):
+            return f"Failed to resolve SQL endpoint: {sql_endpoint}"
+        logger.info(f"Reading table {table_name} from SQL endpoint {sql_endpoint}")
+        client = SQLClient(sql_endpoint=sql_endpoint, database=database)
+        df = client.read_table(table_name)
+        if df.is_empty():
+            return f"No data found in table '{table_name}'."
+        # Convert to markdown for user-friendly display
+        markdown = f"### Table: {table_name} (shape: {df.shape})\n\n"
+        markdown += df.head(10).to_pandas().to_markdown(index=False)
+        markdown += f"\n\nColumns: {', '.join(df.columns)}"
+        return markdown
+    except Exception as e:
+        logger.error(f"Error reading data: {str(e)}")
+        return f"Error reading data: {str(e)}"

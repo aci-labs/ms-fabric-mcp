@@ -25,4 +25,4 @@ class WorkspaceClient:
 
     async def resolve_workspace(self, workspace_name: str):
         """Resolve workspace name to workspace ID."""
-        return await self.client.resolve_workspace(workspace_name)
+        return await self.client.resolve_workspace_name_and_id(workspace=workspace_name)
